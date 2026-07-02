@@ -18,28 +18,64 @@ ALGORITHMS = {
     "Portfolio Rebalance": (PortfolioRebalance, {"target_weights": {"AAPL": 0.5, "MSFT": 0.5}, "frequency": "ME"}),
 }
 
+# Plain-language tooltip for each stat card, plus whether the sign of the
+# value should be read as good (green) or bad (red). None = neutral metric.
+METRIC_META = {
+    "total_return": ("Total Return", "Overall gain or loss over the whole backtest period.", True),
+    "cagr": ("CAGR", "Compound Annual Growth Rate -- the annualized return.", True),
+    "annual_volatility": ("Volatility", "How much returns swing around, annualized. Higher = bumpier ride.", None),
+    "sharpe": ("Sharpe", "Return per unit of risk. Above ~1 is decent, above ~2 is very good.", True),
+    "sortino": ("Sortino", "Like Sharpe, but only penalizes downside swings, not all volatility.", True),
+    "max_drawdown": ("Max Drawdown", "Worst peak-to-trough loss you'd have sat through. Closer to 0% is better.", True),
+    "calmar": ("Calmar", "CAGR earned per unit of max drawdown -- return vs. worst-case pain.", True),
+    "win_rate": ("Win Rate", "Share of trading days that were profitable.", None),
+    "trade_count": ("Trades", "Number of times the strategy changed its positions.", None),
+    "benchmark_total_return": ("Benchmark Return", "What buying and holding the benchmark instead would have returned.", None),
+    "benchmark_cagr": ("Benchmark CAGR", "The benchmark's annualized return, for comparison.", None),
+}
+_PERCENT_KEYS = {"total_return", "cagr", "annual_volatility", "max_drawdown", "win_rate",
+                  "benchmark_total_return", "benchmark_cagr"}
+
+
+def _stat_card(key: str, value) -> html.Div:
+    label, tooltip, signed = METRIC_META.get(key, (key, "", None))
+    text = str(value) if key == "trade_count" else f"{value * 100:,.1f}%" if key in _PERCENT_KEYS else f"{value:,.2f}"
+    direction = "" if signed is None or value == 0 else "positive" if value > 0 else "negative"
+    return html.Div(className="stat-card", **{"data-tooltip": tooltip}, children=[
+        html.Span(label, className="stat-label"),
+        html.Span(text, className=f"stat-value {direction}".strip()),
+    ])
+
+
+def _field(label: str, control) -> html.Div:
+    return html.Div(className="field", children=[html.Label(label), control])
+
+
 app = Dash(__name__)
+app.title = "pyTrader"
 app.layout = html.Div(
-    style={"maxWidth": "700px", "margin": "auto", "fontFamily": "sans-serif"},
+    style={"maxWidth": "900px", "margin": "30px auto", "padding": "0 20px"},
     children=[
-        html.H2("pyTrader"),
-        html.Label("Algorithm"),
-        dcc.Dropdown(id="algorithm", options=list(ALGORITHMS), value="Moving Average Crossover"),
-        html.Label("Tickers (comma-separated)"),
-        dcc.Input(id="tickers", value="AAPL", type="text", style={"width": "100%"}),
-        html.Label("Start date"),
-        dcc.DatePickerSingle(id="start", date=date(2020, 1, 1)),
-        html.Label("End date"),
-        dcc.DatePickerSingle(id="end", date=date.today()),
-        html.Label("Initial capital"),
-        dcc.Input(id="capital", value=100_000, type="number"),
-        html.Label("Commission (bps)"),
-        dcc.Input(id="commission", value=0, type="number"),
-        html.Label("Algorithm parameters (JSON)"),
-        dcc.Textarea(id="params", style={"width": "100%", "height": "100px"}),
-        html.Button("Run", id="run", n_clicks=0),
-        html.Div(id="stats"),
-        html.Div(id="figures"),
+        html.Div(className="header", children=[
+            html.H2("pyTrader"),
+            html.P("Pick a strategy, run a backtest, see how it would have performed."),
+        ]),
+        html.Div(className="card", children=[
+            html.Div(className="controls-grid", children=[
+                _field("Algorithm", dcc.Dropdown(id="algorithm", options=list(ALGORITHMS), value="Moving Average Crossover")),
+                _field("Tickers (comma-separated)", dcc.Input(id="tickers", value="AAPL", type="text", style={"width": "100%"})),
+                _field("Start date", dcc.DatePickerSingle(id="start", date=date(2020, 1, 1))),
+                _field("End date", dcc.DatePickerSingle(id="end", date=date.today())),
+                _field("Initial capital", dcc.Input(id="capital", value=100_000, type="number")),
+                _field("Commission (bps)", dcc.Input(id="commission", value=0, type="number")),
+            ]),
+            _field("Algorithm parameters (JSON)", dcc.Textarea(id="params", style={"width": "100%", "height": "90px"})),
+            html.Button("Run Backtest", id="run", n_clicks=0),
+        ]),
+        dcc.Loading(children=[
+            html.Div(id="stats", className="stats-grid"),
+            html.Div(id="figures"),
+        ]),
     ],
 )
 
@@ -81,8 +117,8 @@ def _run_backtest(_, algorithm_name, tickers, start, end, capital, commission, p
     except (RuntimeError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         return html.Div(f"Error: {exc}", style={"color": "crimson"}), []
 
-    stats = html.Ul([html.Li(f"{k}: {v:,.4f}" if isinstance(v, float) else f"{k}: {v}") for k, v in report.stats.items()])
-    figures = [dcc.Graph(figure=fig) for fig in report.figures]
+    stats = [_stat_card(k, v) for k, v in report.stats.items()]
+    figures = [html.Div(className="card", children=dcc.Graph(figure=fig)) for fig in report.figures]
     return stats, figures
 
 
