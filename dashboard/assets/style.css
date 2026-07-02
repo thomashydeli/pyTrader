@@ -1,0 +1,103 @@
+:root {
+  --bg: #0b0e11;
+  --card: #161a1e;
+  --border: #262b30;
+  --text: #e6e6e6;
+  --muted: #8f98a3;
+  --green: #00c805;
+  --red: #ff453a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.header {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.header h2 { margin: 0; letter-spacing: -0.02em; }
+.header p { color: var(--muted); margin: 4px 0 0; font-size: 0.9em; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.field label { display: block; font-size: 0.8em; color: var(--muted); margin-bottom: 4px; }
+
+.dash-dropdown, input, textarea {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+
+.dash-dropdown-value-item span, .dash-dropdown-trigger-icon, .dash-dropdown-clear { color: var(--text) !important; }
+.dash-options-list { background: var(--card) !important; border: 1px solid var(--border) !important; }
+.dash-dropdown-option { background: var(--card) !important; color: var(--text) !important; }
+.dash-dropdown-option.selected { color: var(--green) !important; }
+
+#run {
+  background: var(--green);
+  color: #06210a;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 14px;
+}
+#run:hover { filter: brightness(1.08); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  position: relative;
+  cursor: default;
+}
+
+.stat-label { display: block; font-size: 0.78em; color: var(--muted); }
+.stat-value { display: block; font-size: 1.25em; font-weight: 600; margin-top: 2px; }
+.stat-value.positive { color: var(--green); }
+.stat-value.negative { color: var(--red); }
+
+/* Pure-CSS tooltip bubble: hover a stat card to see what the metric means. */
+.stat-card[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 0;
+  width: max-content;
+  max-width: 220px;
+  background: #23282e;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.78em;
+  line-height: 1.3;
+  z-index: 10;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
